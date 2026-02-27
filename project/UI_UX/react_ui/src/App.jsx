@@ -1,0 +1,53 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/modules/auth/authStore'
+import { useEffect } from 'react'
+import { localDB } from '@/modules/localdb/localDB'
+
+// Pages
+import LanguageSelect from '@/modules/language/LanguageSelect'
+import LoginPage      from '@/modules/auth/LoginPage'
+import RegisterPage   from '@/modules/auth/RegisterPage'
+import Dashboard      from '@/components/kiosk/Dashboard'
+
+// Orchestrator stub — real backend connection lives here later
+import '@/modules/orchestrator/orchestrator'
+
+// Protected route wrapper
+function Protected({ children }) {
+  const user = useAuthStore(s => s.user)
+  if (!user) return <Navigate to="/login" replace />
+  return children
+}
+
+// Public-only route (redirect away if already logged in)
+function PublicOnly({ children }) {
+  const user = useAuthStore(s => s.user)
+  if (user) return <Navigate to="/dashboard" replace />
+  return children
+}
+
+export default function App() {
+  const initAuth = useAuthStore(s => s.initFromStorage)
+
+  // On mount: boot the DB and rehydrate session
+  useEffect(() => {
+    localDB.init().then(() => initAuth())
+  }, [initAuth])
+
+  return (
+    <Routes>
+      {/* Language selection is always the first screen */}
+      <Route path="/"         element={<LanguageSelect />} />
+
+      {/* Auth routes — only for logged-out users */}
+      <Route path="/login"    element={<PublicOnly><LoginPage /></PublicOnly>} />
+      <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
+
+      {/* Protected app */}
+      <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
