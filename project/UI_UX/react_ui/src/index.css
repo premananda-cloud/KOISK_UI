@@ -82,7 +82,7 @@
 
   /* ── Cards ───────────────────────────────────── */
   .card {
-    @apply bg-white rounded-3xl shadow-sm border border-koisk-blue/8
+    @apply bg-white rounded-3xl shadow-sm border border-koisk-blue/10
            transition-all duration-200;
   }
 
