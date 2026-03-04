@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from './authStore'
+import { useKeyboardInput } from '../../hooks/useKeyboardInput' // <-- added
 
 export default function RegisterPage() {
   const { t }    = useTranslation()
@@ -11,6 +12,13 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     name: '', phone: '', pin: '', pinConfirm: '', consumerId: '',
   })
+
+  // Create refs for each input
+  const nameRef = useKeyboardInput()
+  const phoneRef = useKeyboardInput()
+  const pinRef = useKeyboardInput()
+  const pinConfirmRef = useKeyboardInput()
+  const consumerIdRef = useKeyboardInput()
 
   const set = (field) => (e) => {
     clearError()
@@ -65,6 +73,7 @@ export default function RegisterPage() {
             <div>
               <label className="input-label">{t('auth.name')}</label>
               <input
+                ref={nameRef} // <-- attach ref
                 type="text"
                 value={form.name}
                 onChange={set('name')}
@@ -78,6 +87,7 @@ export default function RegisterPage() {
             <div>
               <label className="input-label">{t('auth.phone')}</label>
               <input
+                ref={phoneRef} // <-- attach ref
                 type="tel"
                 inputMode="numeric"
                 value={form.phone}
@@ -92,6 +102,7 @@ export default function RegisterPage() {
               <div>
                 <label className="input-label">{t('auth.pin')}</label>
                 <input
+                  ref={pinRef} // <-- attach ref
                   type="password"
                   inputMode="numeric"
                   value={form.pin}
@@ -105,6 +116,7 @@ export default function RegisterPage() {
               <div>
                 <label className="input-label">{t('auth.pin_confirm')}</label>
                 <input
+                  ref={pinConfirmRef} // <-- attach ref
                   type="password"
                   inputMode="numeric"
                   value={form.pinConfirm}
@@ -131,6 +143,7 @@ export default function RegisterPage() {
             <div>
               <label className="input-label">{t('auth.consumer_id')}</label>
               <input
+                ref={consumerIdRef} // <-- attach ref
                 type="text"
                 value={form.consumerId}
                 onChange={set('consumerId')}
