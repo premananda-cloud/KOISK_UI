@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from './authStore'
-import { useKeyboardInput } from '../../hooks/useKeyboardInput' // <-- added
+import { useKeyboardInput } from '../../hooks/useKeyboardInput'
 
 export default function RegisterPage() {
-  const { t }    = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { register, loading, error, clearError } = useAuthStore()
 
@@ -13,20 +13,25 @@ export default function RegisterPage() {
     name: '', phone: '', pin: '', pinConfirm: '', consumerId: '',
   })
 
-  // Create refs for each input
-  const nameRef = useKeyboardInput()
-  const phoneRef = useKeyboardInput()
-  const pinRef = useKeyboardInput()
-  const pinConfirmRef = useKeyboardInput()
-  const consumerIdRef = useKeyboardInput()
+  // Individual setters for each field (they update the form state)
+  const setName = (value) => setForm(prev => ({ ...prev, name: value }))
+  const setPhone = (value) => setForm(prev => ({ ...prev, phone: value }))
+  const setPin = (value) => setForm(prev => ({ ...prev, pin: value }))
+  const setPinConfirm = (value) => setForm(prev => ({ ...prev, pinConfirm: value }))
+  const setConsumerId = (value) => setForm(prev => ({ ...prev, consumerId: value }))
 
-  const set = (field) => (e) => {
-    clearError()
-    let val = e.target.value
-    if (field === 'phone')      val = val.replace(/\D/g, '').slice(0, 10)
-    if (field === 'pin' || field === 'pinConfirm') val = val.replace(/\D/g, '').slice(0, 4)
-    setForm(f => ({ ...f, [field]: val }))
-  }
+  // Create refs for each input, passing the corresponding setter
+  const nameRef = useKeyboardInput(setName)
+  const phoneRef = useKeyboardInput(setPhone)
+  const pinRef = useKeyboardInput(setPin)
+  const pinConfirmRef = useKeyboardInput(setPinConfirm)
+  const consumerIdRef = useKeyboardInput(setConsumerId)
+
+  const handleNameChange = (e) => setName(e.target.value)
+  const handlePhoneChange = (e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))
+  const handlePinChange = (e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
+  const handlePinConfirmChange = (e) => setPinConfirm(e.target.value.replace(/\D/g, '').slice(0, 4))
+  const handleConsumerIdChange = (e) => setConsumerId(e.target.value)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -73,10 +78,10 @@ export default function RegisterPage() {
             <div>
               <label className="input-label">{t('auth.name')}</label>
               <input
-                ref={nameRef} // <-- attach ref
+                ref={nameRef}
                 type="text"
                 value={form.name}
-                onChange={set('name')}
+                onChange={handleNameChange}
                 placeholder={t('auth.name_placeholder')}
                 className="input-field"
                 autoCapitalize="words"
@@ -87,11 +92,11 @@ export default function RegisterPage() {
             <div>
               <label className="input-label">{t('auth.phone')}</label>
               <input
-                ref={phoneRef} // <-- attach ref
+                ref={phoneRef}
                 type="tel"
                 inputMode="numeric"
                 value={form.phone}
-                onChange={set('phone')}
+                onChange={handlePhoneChange}
                 placeholder={t('auth.phone_placeholder')}
                 className="input-field"
                 required
@@ -102,11 +107,11 @@ export default function RegisterPage() {
               <div>
                 <label className="input-label">{t('auth.pin')}</label>
                 <input
-                  ref={pinRef} // <-- attach ref
+                  ref={pinRef}
                   type="password"
                   inputMode="numeric"
                   value={form.pin}
-                  onChange={set('pin')}
+                  onChange={handlePinChange}
                   placeholder="••••"
                   className="input-field tracking-[0.5em] text-2xl text-center"
                   maxLength={4}
@@ -116,11 +121,11 @@ export default function RegisterPage() {
               <div>
                 <label className="input-label">{t('auth.pin_confirm')}</label>
                 <input
-                  ref={pinConfirmRef} // <-- attach ref
+                  ref={pinConfirmRef}
                   type="password"
                   inputMode="numeric"
                   value={form.pinConfirm}
-                  onChange={set('pinConfirm')}
+                  onChange={handlePinConfirmChange}
                   placeholder="••••"
                   className={`input-field tracking-[0.5em] text-2xl text-center ${
                     form.pinConfirm && form.pin !== form.pinConfirm
@@ -143,10 +148,10 @@ export default function RegisterPage() {
             <div>
               <label className="input-label">{t('auth.consumer_id')}</label>
               <input
-                ref={consumerIdRef} // <-- attach ref
+                ref={consumerIdRef}
                 type="text"
                 value={form.consumerId}
-                onChange={set('consumerId')}
+                onChange={handleConsumerIdChange}
                 placeholder={t('auth.consumer_id_placeholder')}
                 className="input-field"
               />

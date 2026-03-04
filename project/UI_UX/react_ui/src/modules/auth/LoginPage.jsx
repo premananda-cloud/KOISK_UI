@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from './authStore'
 import { clsx } from 'clsx'
-import { useKeyboardInput } from '../../hooks/useKeyboardInput' // <-- added
+import { useKeyboardInput } from '../../hooks/useKeyboardInput'
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation()
@@ -13,8 +13,9 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('')
   const [pin,   setPin]   = useState('')
 
-  const phoneRef = useKeyboardInput() // <-- ref for phone
-  const pinRef = useKeyboardInput()   // <-- ref for pin
+  // Pass the state setters to the keyboard hook
+  const phoneRef = useKeyboardInput(setPhone)
+  const pinRef   = useKeyboardInput(setPin)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -70,7 +71,7 @@ export default function LoginPage() {
             <div>
               <label className="input-label">{t('auth.phone')}</label>
               <input
-                ref={phoneRef} // <-- attach ref
+                ref={phoneRef}
                 type="tel"
                 inputMode="numeric"
                 value={phone}
@@ -85,7 +86,7 @@ export default function LoginPage() {
             <div>
               <label className="input-label">{t('auth.pin')}</label>
               <input
-                ref={pinRef} // <-- attach ref
+                ref={pinRef}
                 type="password"
                 inputMode="numeric"
                 value={pin}

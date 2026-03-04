@@ -1,12 +1,12 @@
 import { useRef, useEffect } from 'react';
 import { useKeyboard } from '../context/KeyboardContext';
 
-export function useKeyboardInput() {
+export function useKeyboardInput(setter) {
   const inputRef = useRef(null);
   const { focusInput } = useKeyboard();
 
   useEffect(() => {
-    const handleFocus = () => focusInput(inputRef.current);
+    const handleFocus = () => focusInput(inputRef.current, setter);
     const inputEl = inputRef.current;
     if (inputEl) {
       inputEl.addEventListener('focus', handleFocus);
@@ -14,7 +14,7 @@ export function useKeyboardInput() {
     return () => {
       if (inputEl) inputEl.removeEventListener('focus', handleFocus);
     };
-  }, [focusInput]);
+  }, [focusInput, setter]);
 
   return inputRef;
 }

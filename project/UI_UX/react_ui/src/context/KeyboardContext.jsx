@@ -1,82 +1,77 @@
-import React, { createContext, useContext, useState, useRef } from 'react';
+import React, { createContext, useContext, useState, useRef, useCallback } from 'react';
 
 const KeyboardContext = createContext();
 
 export function KeyboardProvider({ children }) {
   const [activeInput, setActiveInput] = useState(null);
   const inputRef = useRef(null);
+  const [valueSetter, setValueSetter] = useState(null); // new
 
-  const focusInput = (ref) => {
+  const focusInput = useCallback((ref, setter) => {
     inputRef.current = ref;
+    setValueSetter(() => setter); // store the setter
     setActiveInput(ref);
-  };
+  }, []);
 
-  const blurInput = () => {
+  const blurInput = useCallback(() => {
     setActiveInput(null);
     inputRef.current = null;
-  };
+    setValueSetter(null);
+  }, []);
 
-  const insertChar = (char) => {
-    if (!inputRef.current) return;
-    const start = inputRef.current.selectionStart;
-    const end = inputRef.current.selectionEnd;
-    const value = inputRef.current.value;
-    const newValue = value.substring(0, start) + char + value.substring(end);
-    inputRef.current.value = newValue;
-    // Trigger React's onChange event manually
-    const event = new Event('input', { bubbles: true });
-    inputRef.current.dispatchEvent(event);
-    // Move cursor after inserted char
-    inputRef.current.setSelectionRange(start + char.length, start + char.length);
-  };
+  const insertChar = useCallback((char) => {
+    if (!inputRef.current || !valueSetter) return;
+    const input = inputRef.current;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const currentValue = input.value;
+    const newValue = currentValue.substring(0, start) + char + currentValue.substring(end);
+    valueSetter(newValue); // update React state
+    // After state update, cursor will be reset; we need to restore it after render
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(start + char.length, start + char.length);
+    }, 0);
+  }, [valueSetter]);
 
-  const handleBackspace = () => {
-    if (!inputRef.current) return;
-    const start = inputRef.current.selectionStart;
-    const end = inputRef.current.selectionEnd;
+  const handleBackspace = useCallback(() => {
+    if (!inputRef.current || !valueSetter) return;
+    const input = inputRef.current;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const currentValue = input.value;
+    let newValue;
+    let newCursor = start;
     if (start === end && start > 0) {
-      // Delete one character before cursor
-      const value = inputRef.current.value;
-      const newValue = value.substring(0, start - 1) + value.substring(end);
-      inputRef.current.value = newValue;
-      const event = new Event('input', { bubbles: true });
-      inputRef.current.dispatchEvent(event);
-      inputRef.current.setSelectionRange(start - 1, start - 1);
+      newValue = currentValue.substring(0, start - 1) + currentValue.substring(end);
+      newCursor = start - 1;
     } else if (start !== end) {
-      // Delete selected range
-      const value = inputRef.current.value;
-      const newValue = value.substring(0, start) + value.substring(end);
-      inputRef.current.value = newValue;
-      const event = new Event('input', { bubbles: true });
-      inputRef.current.dispatchEvent(event);
-      inputRef.current.setSelectionRange(start, start);
-    }
-  };
+      newValue = currentValue.substring(0, start) + currentValue.substring(end);
+      newCursor = start;
+    } else return;
+    valueSetter(newValue);
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(newCursor, newCursor);
+    }, 0);
+  }, [valueSetter]);
 
-  const handleClear = () => {
-    if (!inputRef.current) return;
-    inputRef.current.value = '';
-    const event = new Event('input', { bubbles: true });
-    inputRef.current.dispatchEvent(event);
-  };
+  const handleClear = useCallback(() => {
+    if (!valueSetter) return;
+    valueSetter('');
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, [valueSetter]);
 
-  const handleKeyPress = (key) => {
+  const handleKeyPress = useCallback((key) => {
     if (key === 'Backspace') handleBackspace();
     else if (key === 'Clear') handleClear();
     else if (key === 'Close') blurInput();
     else if (key === ' ') insertChar(' ');
     else insertChar(key);
-  };
+  }, [handleBackspace, handleClear, insertChar, blurInput]);
 
   return (
-    <KeyboardContext.Provider
-      value={{
-        activeInput,
-        focusInput,
-        blurInput,
-        handleKeyPress,
-      }}
-    >
+    <KeyboardContext.Provider value={{ activeInput, focusInput, blurInput, handleKeyPress }}>
       {children}
     </KeyboardContext.Provider>
   );
