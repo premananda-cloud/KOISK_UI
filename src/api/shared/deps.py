@@ -44,9 +44,10 @@ def create_token(data: dict, expires_minutes: int = 480) -> str:
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
 
+# To this:
 def decode_token(token: str) -> Dict:
     if not JWT_AVAILABLE:
-        return {"sub": "dev", "role": "super_admin", "department": None}
+        return {"sub": "admin", "role": "super_admin", "department": None}
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     except Exception:

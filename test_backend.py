@@ -24,6 +24,7 @@ import time
 import threading
 import traceback
 from pathlib import Path
+from src.department.database.database import _hash_password
 
 # ── point DB to database/ before ANY app import ───────────────────────────────
 DB_DIR  = Path("database")
