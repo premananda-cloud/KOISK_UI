@@ -10,7 +10,12 @@ import LanguageSelect from '@/modules/language/LanguageSelect';
 import LoginPage from '@/modules/auth/LoginPage';
 import RegisterPage from '@/modules/auth/RegisterPage';
 import Dashboard from '@/components/kiosk/Dashboard';
-import ReceiptScreen from '@/modules/payment/ReceiptScreen'; // FIX: was @/modules/payments/
+import ReceiptScreen   from '@/components/payment/ReceiptScreen';   // FIXED: was @/modules/payment/
+
+// Department service screens
+import ElectricityScreen from '@/components/departments/ElectricityScreen';
+import WaterScreen       from '@/components/departments/WaterScreen';
+import MunicipalScreen   from '@/components/departments/MunicipalScreen';
 
 // Orchestrator stub
 import '@/modules/orchestrator/orchestrator';
@@ -33,7 +38,6 @@ export default function App() {
   const initAuth = useAuthStore(s => s.initFromStorage);
   const { activeInput, handleKeyPress, blurInput } = useKeyboard();
 
-  // On mount: boot the DB and rehydrate session
   useEffect(() => {
     localDB.init().then(() => initAuth());
   }, [initAuth]);
@@ -41,22 +45,19 @@ export default function App() {
   return (
     <>
       <Routes>
-        {/* Language selection is always the first screen */}
-        <Route path="/" element={<LanguageSelect />} />
-
-        {/* Auth routes — only for logged-out users */}
-        <Route path="/login" element={<PublicOnly><LoginPage /></PublicOnly>} />
+        <Route path="/"         element={<LanguageSelect />} />
+        <Route path="/login"    element={<PublicOnly><LoginPage /></PublicOnly>} />
         <Route path="/register" element={<PublicOnly><RegisterPage /></PublicOnly>} />
 
-        {/* Protected app */}
-        <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
-        <Route path="/receipt/:id" element={<Protected><ReceiptScreen /></Protected>} />
+        <Route path="/dashboard"             element={<Protected><Dashboard /></Protected>} />
+        <Route path="/receipt/:id"           element={<Protected><ReceiptScreen /></Protected>} />
+        <Route path="/services/electricity"  element={<Protected><ElectricityScreen /></Protected>} />
+        <Route path="/services/water"        element={<Protected><WaterScreen /></Protected>} />
+        <Route path="/services/municipal"    element={<Protected><MunicipalScreen /></Protected>} />
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Virtual keyboard – appears when an input is focused */}
       {activeInput && (
         <Keyboard onKeyPress={handleKeyPress} onClose={blurInput} />
       )}

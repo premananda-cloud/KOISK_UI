@@ -3,9 +3,26 @@ import axios from 'axios';
 
 class Orchestrator {
   constructor() {
-    this._backendConnected = false; // Set to true when backend is ready
-    this._backendBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    this._mockMode = true; // Toggle for development
+    this._backendConnected = false;
+    this._backendBaseUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8877';
+    this._mockMode = false; // Real backend mode
+    // Auto-probe on startup
+    this._probe();
+  }
+
+  async _probe() {
+    try {
+      const res = await fetch(`${this._backendBaseUrl}/health`);
+      if (res.ok) {
+        this._backendConnected = true;
+        this._mockMode = false;
+        console.info('[Orchestrator] ✅ Backend connected at', this._backendBaseUrl);
+      }
+    } catch {
+      this._backendConnected = false;
+      this._mockMode = true;
+      console.warn('[Orchestrator] ⚠️ Backend unreachable — mock mode active');
+    }
   }
 
   isConnected() {
@@ -17,69 +34,64 @@ class Orchestrator {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }
 
-  // ── Auth lifecycle hooks (called by authStore) ──────────────────────────────
-  // BUG FIX: authStore calls these methods but they were never defined,
-  // causing a TypeError crash on every register and logout action.
-
+  // ── Auth lifecycle hooks ─────────────────────────────────────────────────────
   onUserRegistered(user) {
     if (this._mockMode || !this._backendConnected) {
-      console.debug('[Orchestrator] User registered (offline queue):', user.id)
-      return
+      console.debug('[Orchestrator] User registered (offline queue):', user.id);
+      return;
     }
-    // TODO: sync new user record to backend when connected
     this.registerCustomer({ userId: user.id, name: user.name, contact: user.phone })
-      .catch(err => console.warn('[Orchestrator] Failed to sync new user:', err))
+      .catch(err => console.warn('[Orchestrator] Failed to sync new user:', err));
   }
 
   onUserLoggedOut(userId) {
     if (this._mockMode || !this._backendConnected) {
-      console.debug('[Orchestrator] User logged out (local only):', userId)
-      return
+      console.debug('[Orchestrator] User logged out (local only):', userId);
+      return;
     }
-    // TODO: invalidate server-side session token when backend is connected
-    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_token');
   }
 
-  // Payment methods
+  // ── Customer ─────────────────────────────────────────────────────────────────
   async registerCustomer(userData) {
     if (this._mockMode || !this._backendConnected) {
-      return {
-        portoneCustomerId: `cust_mock_${Date.now()}`,
-        razorpayCustomerId: null,
-      };
+      return { portoneCustomerId: `cust_mock_${Date.now()}`, razorpayCustomerId: null };
     }
-
-    try {
-      const response = await axios.post(
-        `${this._backendBaseUrl}/api/v1/payments/customer/register`,
-        userData,
-        { headers: this._authHeaders() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error registering customer:', error);
-      throw error;
-    }
+    const response = await axios.post(
+      `${this._backendBaseUrl}/api/v1/payments/customer/register`,
+      userData,
+      { headers: this._authHeaders() }
+    );
+    return response.data;
   }
 
+  // ── Bills ────────────────────────────────────────────────────────────────────
+  async getBills(userId, dept) {
+    if (this._mockMode || !this._backendConnected) {
+      const localDB = (await import('../localdb/localDB.js')).default;
+      return localDB.getBillsByUserAndDept(userId, dept);
+    }
+    // Backend bills endpoint uses consumer_id = userId for now
+    const response = await axios.get(
+      `${this._backendBaseUrl}/api/v1/${dept}/bills/${userId}`,
+      { headers: this._authHeaders() }
+    );
+    // Backend returns { bills: [...] }
+    return response.data.bills ?? response.data ?? [];
+  }
+
+  // ── Payments ─────────────────────────────────────────────────────────────────
   async initiatePayment(payload) {
     if (this._mockMode || !this._backendConnected) {
-      // Import dynamically to avoid circular dependencies
       const { mockPaymentService } = await import('./mockPaymentService.js');
       return mockPaymentService.initiate(payload);
     }
-
-    try {
-      const response = await axios.post(
-        `${this._backendBaseUrl}/api/v1/payments/initiate`,
-        payload,
-        { headers: this._authHeaders() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error initiating payment:', error);
-      throw error;
-    }
+    const response = await axios.post(
+      `${this._backendBaseUrl}/api/v1/payments/initiate`,
+      payload,
+      { headers: this._authHeaders() }
+    );
+    return response.data;
   }
 
   async completePayment(payload) {
@@ -87,35 +99,23 @@ class Orchestrator {
       const { mockPaymentService } = await import('./mockPaymentService.js');
       return mockPaymentService.complete(payload);
     }
-
-    try {
-      const response = await axios.post(
-        `${this._backendBaseUrl}/api/v1/payments/complete`,
-        payload,
-        { headers: this._authHeaders() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error completing payment:', error);
-      throw error;
-    }
+    const response = await axios.post(
+      `${this._backendBaseUrl}/api/v1/payments/complete`,
+      payload,
+      { headers: this._authHeaders() }
+    );
+    return response.data;
   }
 
   async verifyPayment({ gateway, paymentId }) {
     if (this._mockMode || !this._backendConnected) {
       return { verified: true, status: 'SUCCESS' };
     }
-
-    try {
-      const response = await axios.get(
-        `${this._backendBaseUrl}/api/v1/payments/status/${paymentId}`,
-        { headers: this._authHeaders() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error verifying payment:', error);
-      throw error;
-    }
+    const response = await axios.get(
+      `${this._backendBaseUrl}/api/v1/payments/status/${paymentId}`,
+      { headers: this._authHeaders() }
+    );
+    return response.data;
   }
 
   async getPaymentHistory(userId) {
@@ -123,38 +123,13 @@ class Orchestrator {
       const localDB = (await import('../localdb/localDB.js')).default;
       return localDB.getPaymentsByUserId(userId);
     }
-
-    try {
-      const response = await axios.get(
-        `${this._backendBaseUrl}/api/v1/payments/history/${userId}`,
-        { headers: this._authHeaders() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching payment history:', error);
-      return [];
-    }
-  }
-
-  async getBills(userId, dept) {
-    if (this._mockMode || !this._backendConnected) {
-      const localDB = (await import('../localdb/localDB.js')).default;
-      return localDB.getBillsByUserAndDept(userId, dept);
-    }
-
-    try {
-      const response = await axios.get(
-        `${this._backendBaseUrl}/api/v1/${dept}/bills`,
-        { params: { userId }, headers: this._authHeaders() }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching bills:', error);
-      return [];
-    }
+    const response = await axios.get(
+      `${this._backendBaseUrl}/api/v1/payments/history/${userId}`,
+      { headers: this._authHeaders() }
+    );
+    return response.data;
   }
 }
 
-// Create singleton instance
 const orchestrator = new Orchestrator();
 export default orchestrator;

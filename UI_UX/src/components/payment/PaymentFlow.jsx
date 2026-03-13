@@ -12,6 +12,7 @@
 
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../modules/auth/authStore.js';
 import usePaymentStore from '../../modules/payment/paymentStore.js';
 import paymentService from '../../modules/payment/paymentService.js';
 import { portoneAdapter, razorpayAdapter } from '../../modules/payment/gatewayAdapters.js';
@@ -222,6 +223,7 @@ function FailedScreen({ error, onRetry, onClose }) {
 
 export default function PaymentFlow({ billId, dept, onClose }) {
   const navigate = useNavigate();
+  const authUser = useAuthStore(s => s.user);
   const {
     step,
     activeBill,
@@ -245,7 +247,7 @@ export default function PaymentFlow({ billId, dept, onClose }) {
   useEffect(() => {
     async function loadBill() {
       try {
-        const bills = await paymentService.getPendingBills('current-user', dept);
+        const bills = await paymentService.getPendingBills(authUser?.id ?? 'demo-user', dept);
         const bill = bills.find((b) => b.id === billId) ?? bills[0];
         if (bill) {
           setActiveBill(bill);
@@ -277,7 +279,7 @@ export default function PaymentFlow({ billId, dept, onClose }) {
 
     try {
       // Determine current user ID (replace with auth store lookup)
-      const userId = 'current-user';
+      const userId = authUser?.id ?? 'demo-user';
 
       // Step 1: Initiate payment (creates order)
       const { orderId, paymentId, mode, mockDelay } = await paymentService.initiatePayment({

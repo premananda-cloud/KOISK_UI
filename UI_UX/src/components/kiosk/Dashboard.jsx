@@ -86,6 +86,7 @@ export default function Dashboard() {
             {SERVICE_TILES.map((svc, i) => (
               <button
                 key={svc.key}
+                onClick={() => navigate(`/services/${svc.key}`)}
                 className={clsx(
                   'card-hover p-5 text-left',
                   'animate-fade-up opacity-0-start',
