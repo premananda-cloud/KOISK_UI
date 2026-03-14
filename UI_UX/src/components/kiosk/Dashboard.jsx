@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/modules/auth/authStore'
 import localDB from '/src/modules/localdb/localDB.js'
 import { clsx } from 'clsx'
-import { useKeyboardInput } from "../../hooks/useKeyboardInput"
+import { useIdleTimeout } from '../../hooks/useIdleTimeout'
+import IdleOverlay from './IdleOverlay'
 
 const SERVICE_TILES = [
   { key: 'electricity', icon: '⚡', color: 'from-amber-400 to-yellow-500',  textColor: 'text-amber-900' },
@@ -49,10 +50,18 @@ export default function Dashboard() {
     navigate('/')
   }
 
+  const { isWarning, remaining, reset: resetIdle } = useIdleTimeout({
+    timeout: 300,   // 5 min total
+    warnAt:  30,    // warn at 30s remaining
+    onExpire: handleLogout,
+    enabled: !!user,
+  })
+
   const firstName = user?.name?.split(' ')[0] || t('dashboard.welcome')
 
   return (
     <div className="screen bg-koisk-surface">
+      {isWarning && <IdleOverlay remaining={remaining} onContinue={resetIdle} />}
 
       {/* ── Top Nav ─────────────────────────────────────────────── */}
       <div className="bg-koisk-navy px-6 py-4">
@@ -87,6 +96,7 @@ export default function Dashboard() {
               <button
                 key={svc.key}
                 onClick={() => navigate(`/services/${svc.key}`)}
+                aria-label={t(`services.${svc.key}`)}
                 className={clsx(
                   'card-hover p-5 text-left',
                   'animate-fade-up opacity-0-start',
@@ -110,16 +120,6 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
-
-        {/* Test input for virtual keyboard */}
-        <div className="mt-4 p-4 bg-white rounded-lg">
-          <input
-            ref={useKeyboardInput()}
-            type="text"
-            placeholder="Click me to test keyboard"
-            className="w-full p-2 border rounded"
-          />
-        </div>
 
         {/* ── Recent Activity ──────────────────────────────────── */}
         <section className="animate-fade-up animation-delay-300">
@@ -150,7 +150,7 @@ export default function Dashboard() {
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-display font-semibold text-koisk-navy text-sm truncate">
-                        {req.type.replace(/_/g, ' ')}
+                        {req.type.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
                       </p>
                       <p className="text-koisk-muted text-xs font-body mt-0.5">
                         {req.reference} · {new Date(req.createdAt).toLocaleDateString()}

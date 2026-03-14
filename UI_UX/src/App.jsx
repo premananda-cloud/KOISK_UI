@@ -16,6 +16,7 @@ import ReceiptScreen   from '@/components/payment/ReceiptScreen';   // FIXED: wa
 import ElectricityScreen from '@/components/departments/ElectricityScreen';
 import WaterScreen       from '@/components/departments/WaterScreen';
 import MunicipalScreen   from '@/components/departments/MunicipalScreen';
+import GasScreen         from '@/components/departments/GasScreen';
 
 // Orchestrator stub
 import '@/modules/orchestrator/orchestrator';
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/receipt/:id"           element={<Protected><ReceiptScreen /></Protected>} />
         <Route path="/services/electricity"  element={<Protected><ElectricityScreen /></Protected>} />
         <Route path="/services/water"        element={<Protected><WaterScreen /></Protected>} />
+        <Route path="/services/gas"          element={<Protected><GasScreen /></Protected>} />
         <Route path="/services/municipal"    element={<Protected><MunicipalScreen /></Protected>} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
