@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/modules/auth/authStore';
 import { useEffect } from 'react';
-import localDB from '/src/modules/localdb/localDB.js';
+import localDB from '@/modules/localdb/localDB.js';
 import { useKeyboard } from './context/KeyboardContext';
 import Keyboard from './components/kiosk/Keyboard';
 
