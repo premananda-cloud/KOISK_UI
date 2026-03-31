@@ -37,6 +37,14 @@ def verify_password(plain: str, hashed: str) -> bool:
     return _pwd.verify(plain, hashed)
 
 
+def hash_password(plain: str) -> str:
+    """Hash a plaintext password. Uses bcrypt via passlib, or SHA-256 fallback in dev."""
+    if not JWT_AVAILABLE:
+        import hashlib
+        return hashlib.sha256(plain.encode()).hexdigest()
+    return _pwd.hash(plain)
+
+
 def create_token(data: dict, expires_minutes: int = 480) -> str:
     if not JWT_AVAILABLE:
         return "dev-token"

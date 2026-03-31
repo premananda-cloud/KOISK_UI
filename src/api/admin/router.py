@@ -84,7 +84,7 @@ async def admin_login(
 
 class AdminRegisterBody(BaseModel):
     username:   str
-    email:      str
+    email:      EmailStr
     full_name:  str
     password:   str
     role:       str = "department_admin"   # "department_admin" | "super_admin"
@@ -380,7 +380,7 @@ async def admin_list_payments(
             {
                 "id":          r.id,
                 "userId":      r.user_id,
-                "dept":        r.department,
+                "department":  r.department,
                 "amount":      float(r.amount),
                 "status":      r.status,
                 "gateway":     r.gateway,
@@ -481,7 +481,7 @@ async def admin_set_kiosk_config(
     admin: Admin = Depends(require_super_admin),
     db:    Session = Depends(get_db),
 ):
-    valid_departments = {"water", "electricity", "municipal", "global"}
+    valid_departments = {"water", "electricity", "gas", "municipal", "global"}
     if body.department not in valid_departments:
         raise HTTPException(status_code=400, detail=f"department must be one of {sorted(valid_departments)}")
 
